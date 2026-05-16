@@ -221,9 +221,11 @@ resource "kubernetes_deployment_v1" "prometheus" {
       }
 
       spec {
+        security_context {
+          fs_group = 65534
+        }
+
         container {
-          name  = "prometheus"
-          image = "prom/prometheus:v3.2.1"
 
           port {
             container_port = 9090
@@ -356,6 +358,10 @@ resource "kubernetes_deployment_v1" "grafana" {
       }
 
       spec {
+        security_context {
+          fs_group = 472
+        }
+
         container {
           name  = "grafana"
           image = "grafana/grafana:11.5.1"
