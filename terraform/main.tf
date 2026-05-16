@@ -125,7 +125,8 @@ resource "docker_container" "prometheus" {
   restart = "unless-stopped"
 
   networks_advanced {
-    name = docker_network.sre_final.name
+    name    = docker_network.sre_final.name
+    aliases = ["prometheus"]
   }
 
   ports {
@@ -164,7 +165,8 @@ resource "docker_container" "grafana" {
   restart = "unless-stopped"
 
   networks_advanced {
-    name = docker_network.sre_final.name
+    name    = docker_network.sre_final.name
+    aliases = ["grafana"]
   }
 
   ports {
@@ -209,7 +211,8 @@ resource "docker_container" "alertmanager" {
   restart = "unless-stopped"
 
   networks_advanced {
-    name = docker_network.sre_final.name
+    name    = docker_network.sre_final.name
+    aliases = ["alertmanager"]
   }
 
   ports {
