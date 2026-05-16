@@ -210,7 +210,11 @@ resource "kubernetes_persistent_volume_claim_v1" "prometheus" {
         storage = "10Gi"
       }
     }
-    storage_class_name = "local-path"
+  }
+
+  timeouts {
+    create = "2m"
+    delete = "2m"
   }
 }
 
@@ -359,7 +363,11 @@ resource "kubernetes_persistent_volume_claim_v1" "grafana" {
         storage = "2Gi"
       }
     }
-    storage_class_name = "local-path"
+  }
+
+  timeouts {
+    create = "2m"
+    delete = "2m"
   }
 }
 
@@ -528,7 +536,11 @@ resource "kubernetes_persistent_volume_claim_v1" "alertmanager" {
         storage = "1Gi"
       }
     }
-    storage_class_name = "local-path"
+  }
+
+  timeouts {
+    create = "2m"
+    delete = "2m"
   }
 }
 
