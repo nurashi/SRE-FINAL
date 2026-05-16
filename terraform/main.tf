@@ -214,7 +214,6 @@ resource "kubernetes_persistent_volume_claim_v1" "prometheus" {
 
   timeouts {
     create = "2m"
-    delete = "2m"
   }
 }
 
@@ -367,7 +366,6 @@ resource "kubernetes_persistent_volume_claim_v1" "grafana" {
 
   timeouts {
     create = "2m"
-    delete = "2m"
   }
 }
 
@@ -540,7 +538,6 @@ resource "kubernetes_persistent_volume_claim_v1" "alertmanager" {
 
   timeouts {
     create = "2m"
-    delete = "2m"
   }
 }
 
