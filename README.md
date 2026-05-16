@@ -124,8 +124,51 @@ Required GitHub Secrets:
 
 ## Scaling
 
-Change replicas via Terraform:
+### Manual scaling via Terraform
 
 ```bash
 terraform apply -var="app_replicas=4"
+```
+
+### Auto-scaling (Prometheus-driven)
+
+The auto-scaler queries Prometheus every 30s and adjusts replicas based on request rate.
+
+**Enable auto-scaling on the server:**
+
+```bash
+sudo cp scripts/autoscale.service /etc/systemd/system/
+sudo cp scripts/autoscale.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now autoscale.timer
+```
+
+**Check status:**
+
+```bash
+systemctl status autoscale.timer
+journalctl -u autoscale.service -f
+```
+
+**Thresholds** (configurable in `scripts/autoscale.sh`):
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `SCALE_UP_THRESHOLD` | 50 req/s | Scale up when rate exceeds this |
+| `SCALE_DOWN_THRESHOLD` | 10 req/s | Scale down when rate drops below |
+| `MAX_REPLICAS` | 5 | Absolute ceiling |
+| `MIN_REPLICAS` | 1 | Absolute floor |
+| `COOLDOWN_SECONDS` | 60 | Minimum time between scale operations |
+
+### Verify scaling during load test
+
+```bash
+# Terminal 1: Run locust
+locust -f load-tests/locustfile.py --host=http://192.168.1.65
+
+# Terminal 2: Watch autoscale logs
+journalctl -u autoscale.service -f
+
+# Terminal 3: Watch replicas in Grafana
+# http://192.168.1.65:3000/d/sre-sli-dashboard
 ```

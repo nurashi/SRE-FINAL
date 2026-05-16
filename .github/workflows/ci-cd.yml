@@ -129,6 +129,24 @@ jobs:
           echo "Service failed to become healthy"
           exit 1
 
+      - name: Setup autoscale script
+        run: |
+          mkdir -p /home/nurashi/autoscale
+          cp scripts/autoscale.sh /home/nurashi/autoscale/autoscale.sh
+          chmod +x /home/nurashi/autoscale/autoscale.sh
+          echo "Autoscale script installed to /home/nurashi/autoscale/"
+
+      - name: Install autoscale systemd units
+        continue-on-error: true
+        run: |
+          sudo cp scripts/autoscale.service /etc/systemd/system/autoscale.service
+          sudo cp scripts/autoscale.timer /etc/systemd/system/autoscale.timer
+          sudo systemctl daemon-reload
+          sudo systemctl enable autoscale.timer
+          sudo systemctl start autoscale.timer
+          echo "Autoscale timer installed and started"
+        shell: bash
+
   prometheus-validate:
     name: Validate Prometheus Config
     runs-on: self-hosted

@@ -16,6 +16,30 @@ variable "app_replicas" {
   default     = 2
 }
 
+variable "max_replicas" {
+  description = "Maximum number of replicas for auto-scaling"
+  type        = number
+  default     = 5
+}
+
+variable "min_replicas" {
+  description = "Minimum number of replicas for auto-scaling"
+  type        = number
+  default     = 1
+}
+
+variable "scale_up_threshold" {
+  description = "Requests per second threshold to trigger scale up"
+  type        = number
+  default     = 50
+}
+
+variable "scale_down_threshold" {
+  description = "Requests per second threshold to trigger scale down"
+  type        = number
+  default     = 10
+}
+
 variable "app_port_base" {
   description = "Base port number for application instances"
   type        = number

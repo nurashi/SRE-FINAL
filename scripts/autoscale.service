@@ -1,0 +1,12 @@
+[Unit]
+Description=SRE Final Autoscale Service
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=nurashi
+Group=nurashi
+ExecStart=/home/nurashi/autoscale/autoscale.sh
+StandardOutput=journal
+StandardError=journal
