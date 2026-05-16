@@ -1,0 +1,45 @@
+groups:
+  - name: sre-final-alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "High error rate detected ({{ .Value | humanizePercentage }})"
+          description: "Error rate exceeded 5% SLO threshold over the last 5 minutes on path {{ .Labels.path }}. Current rate: {{ .Value | humanizePercentage }}"
+          runbook_url: "https://github.com/nurashi/SRE-FINAL/wiki/Runbooks#high-error-rate"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "High p99 latency detected ({{ .Value }}s)"
+          description: "p99 latency exceeded 1s threshold on path {{ .Labels.path }}. Current p99: {{ .Value }}s"
+          runbook_url: "https://github.com/nurashi/SRE-FINAL/wiki/Runbooks#high-latency"
+
+      - alert: ServiceDown
+        expr: up{job="sre-final-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "SRE-FINAL app is down"
+          description: "The SRE-FINAL application has been unreachable for more than 1 minute."
+
+      - alert: HighRequestRate
+        expr: rate(http_requests_total[1m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          slo: capacity
+        annotations:
+          summary: "High request rate ({{ .Value | humanize }} req/s)"
+          description: "Request rate exceeding 100 req/s threshold on path {{ .Labels.path }}."

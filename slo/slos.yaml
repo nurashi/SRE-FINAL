@@ -1,0 +1,45 @@
+slo:
+  availability:
+    description: "Service is available and returning successful responses"
+    sli:
+      metric: "http_requests_total"
+      filter: "status!~\"5..\""
+    slo:
+      target: 99.9
+      window: 28d
+    error_budget:
+      burn_rate_fast:
+        threshold: 10
+        window: 1h
+      burn_rate_slow:
+        threshold: 1
+        window: 6h
+
+  latency:
+    description: "API requests complete within acceptable time"
+    sli:
+      metric: "http_request_duration_seconds"
+      quantile: 0.99
+    slo:
+      target: 1.0
+      unit: seconds
+      window: 28d
+
+  throughput:
+    description: "Service handles expected request volume"
+    sli:
+      metric: "http_requests_total"
+    slo:
+      target: 100
+      unit: req/s
+      percent: 95
+      window: 28d
+
+alerting:
+  error_budget_burn:
+    critical:
+      window: 1h
+      burn_rate: 14.4
+    warning:
+      window: 6h
+      burn_rate: 6

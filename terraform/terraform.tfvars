@@ -1,0 +1,12 @@
+dockerhub_username = "nurashi"
+app_image_tag      = "latest"
+app_replicas       = 2
+app_port_base      = 8080
+nginx_port         = 80
+server_ip          = "192.168.1.65"
+prometheus_port    = 9090
+grafana_port       = 3000
+grafana_admin_user     = "admin"
+grafana_admin_password = "admin"
+alertmanager_port  = 9093
+environment        = "prod"
