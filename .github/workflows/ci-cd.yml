@@ -81,12 +81,18 @@ jobs:
     needs: docker-build-push
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
+    env:
+      KUBECONFIG: /home/nurashi/.kube/config
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           clean: false
+
+      - name: Stop old Docker containers
+        continue-on-error: true
+        run: docker compose -f docker-compose.yml down --remove-orphans 2>/dev/null || true
 
       - name: Create state directory
         run: mkdir -p /home/nurashi/terraform-state
@@ -107,20 +113,19 @@ jobs:
             -var="app_image_tag=latest"
 
       - name: Verify app rollout
-        run: |
-          kubectl rollout status deployment/app -n sre-final --timeout=120s
+        run: kubectl rollout status deployment/app -n sre-final --timeout=120s
 
-      - name: Health check via ingress
+      - name: Health check
         run: |
           for i in $(seq 1 20); do
-            if curl -sf -o /dev/null http://localhost/health -H "Host: sre-nurashi.abzy.kz"; then
+            if curl -sf http://localhost/health -H "Host: sre-nurashi.abzy.kz" 2>/dev/null; then
               echo "Service healthy after ${i} attempts"
               exit 0
             fi
-            echo "Waiting for service... attempt ${i}/20"
+            echo "Waiting... ${i}/20"
             sleep 3
           done
-          echo "Service failed to become healthy"
+          echo "Service failed"
           exit 1
 
   prometheus-validate:
