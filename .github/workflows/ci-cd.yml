@@ -7,10 +7,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/sre-final
-
 jobs:
   build-and-test:
     name: Build and Test
@@ -27,10 +23,6 @@ jobs:
           go-version: '1.23'
           cache-dependency-path: app/go.sum
 
-      - name: Go mod tidy
-        working-directory: ./app
-        run: go mod tidy
-
       - name: Vet
         working-directory: ./app
         run: go vet ./...
@@ -45,19 +37,21 @@ jobs:
     needs: build-and-test
     if: github.event_name == 'push'
     timeout-minutes: 15
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/sre-final
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Generate Docker metadata
         id: meta
@@ -80,8 +74,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
 
   deploy:
     name: Deploy
@@ -94,13 +86,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Deploy with Docker Compose
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/sre-final
           TAG: ${{ github.sha }}
         run: |
-          echo "Pulling latest image: ${DOCKERHUB_USERNAME}/sre-final:sha-${GITHUB_SHA::7}"
-          docker compose -f docker-compose.yml pull app
+          echo "Pulling latest image: ${IMAGE_NAME}:sha-${TAG::7}"
+          docker compose -f docker-compose.yml pull
           docker compose -f docker-compose.yml up -d --remove-orphans
           docker compose -f docker-compose.yml ps
 
@@ -125,6 +123,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Validate Prometheus config
         run: |
