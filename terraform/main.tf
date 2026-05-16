@@ -197,26 +197,6 @@ resource "kubernetes_config_map_v1" "prometheus_config" {
   }
 }
 
-resource "kubernetes_persistent_volume_claim_v1" "prometheus" {
-  metadata {
-    name      = "prometheus-data"
-    namespace = kubernetes_namespace_v1.sre_final.metadata[0].name
-  }
-
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "10Gi"
-      }
-    }
-  }
-
-  timeouts {
-    create = "2m"
-  }
-}
-
 resource "kubernetes_deployment_v1" "prometheus" {
   metadata {
     name      = "prometheus"
@@ -285,8 +265,9 @@ resource "kubernetes_deployment_v1" "prometheus" {
 
         volume {
           name = "data"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.prometheus.metadata[0].name
+          host_path {
+            path = "/data/sre-final/prometheus"
+            type = "DirectoryOrCreate"
           }
         }
       }
@@ -346,26 +327,6 @@ resource "kubernetes_config_map_v1" "grafana_dashboard_sli" {
 
   lifecycle {
     ignore_changes = [data]
-  }
-}
-
-resource "kubernetes_persistent_volume_claim_v1" "grafana" {
-  metadata {
-    name      = "grafana-data"
-    namespace = kubernetes_namespace_v1.sre_final.metadata[0].name
-  }
-
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "2Gi"
-      }
-    }
-  }
-
-  timeouts {
-    create = "2m"
   }
 }
 
@@ -483,8 +444,9 @@ resource "kubernetes_deployment_v1" "grafana" {
         }
         volume {
           name = "data"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.grafana.metadata[0].name
+          host_path {
+            path = "/data/sre-final/grafana"
+            type = "DirectoryOrCreate"
           }
         }
       }
@@ -518,26 +480,6 @@ resource "kubernetes_config_map_v1" "alertmanager_config" {
 
   data = {
     "alertmanager.yml" = local.alertmanager_config
-  }
-}
-
-resource "kubernetes_persistent_volume_claim_v1" "alertmanager" {
-  metadata {
-    name      = "alertmanager-data"
-    namespace = kubernetes_namespace_v1.sre_final.metadata[0].name
-  }
-
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "1Gi"
-      }
-    }
-  }
-
-  timeouts {
-    create = "2m"
   }
 }
 
@@ -607,8 +549,9 @@ resource "kubernetes_deployment_v1" "alertmanager" {
 
         volume {
           name = "data"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.alertmanager.metadata[0].name
+          host_path {
+            path = "/data/sre-final/alertmanager"
+            type = "DirectoryOrCreate"
           }
         }
       }
