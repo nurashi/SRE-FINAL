@@ -73,11 +73,25 @@ Grafana login: `admin` / `admin`
 
 ### Load Testing
 
+No pip needed — run Locust via Docker:
+
 ```bash
-cd load-tests
-pip install -r requirements.txt
-locust -f locustfile.py --host=http://192.168.1.65
+# Build locust image (one time)
+docker build -t sre-final-locust -f load-tests/Dockerfile load-tests/
+
+# Run with web UI (http://localhost:8089)
+docker run --rm --network host sre-final-locust -f locustfile.py --host=http://localhost:80
+
+# Run headless (no UI)
+docker run --rm --network host sre-final-locust \
+  -f locustfile.py --host=http://localhost:80 \
+  --headless -u 100 -r 10 -t 5m
 ```
+
+Options:
+- `-u 100` — simultaneous users
+- `-r 10` — spawn rate (users/second)
+- `-t 5m` — run for 5 minutes
 
 ## SLIs and SLOs
 
@@ -163,12 +177,12 @@ journalctl -u autoscale.service -f
 ### Verify scaling during load test
 
 ```bash
-# Terminal 1: Run locust
-locust -f load-tests/locustfile.py --host=http://192.168.1.65
+# Terminal 1: Run locust (web UI at http://localhost:8089)
+docker run --rm --network host sre-final-locust -f locustfile.py --host=http://localhost:80
 
 # Terminal 2: Watch autoscale logs
 journalctl -u autoscale.service -f
 
-# Terminal 3: Watch replicas in Grafana
+# Browser: Grafana SLI dashboard
 # http://192.168.1.65:3000/d/sre-sli-dashboard
 ```

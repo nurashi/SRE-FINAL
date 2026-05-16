@@ -126,7 +126,7 @@ git push main
 
 ### Successful Execution
 
-*[Insert screenshot of GitHub Actions — all jobs green]*
+![alt text](image.png)
 
 ---
 
@@ -154,8 +154,7 @@ git push main
 | Availability SLI | `(1 - error_rate) × 100` | SLO compliance gauge |
 | Latency SLO p99 | `histogram_quantile(0.99, ...)` | p99 vs. 1s target |
 | Heatmap | Request duration distribution | Anomaly detection |
-
-*[Insert screenshot of Grafana SLI Dashboard]*
+![alt text](image-1.png)
 
 ### Alertmanager Rules
 
@@ -166,8 +165,7 @@ git push main
 | ServiceDown | critical | App unreachable | 1m |
 | HighRequestRate | warning | Request rate > 100/s | 2m |
 
-*[Insert screenshot of Alertmanager firing alert]*
-
+![alt text](image-2.png)
 ---
 
 ## 5. SRE Operations
@@ -201,7 +199,7 @@ Components:
 - `scripts/autoscale.service` — systemd unit (oneshot)
 - `scripts/autoscale.timer` — systemd timer (OnUnitActiveSec=30)
 
-To enable auto-scaling on the server:
+To enable auto-scaling on the server I have used:
 ```bash
 sudo cp scripts/autoscale.service /etc/systemd/system/
 sudo cp scripts/autoscale.timer /etc/systemd/system/
@@ -213,12 +211,19 @@ sudo systemctl enable --now autoscale.timer
 
 ### Load Testing
 
-**Tool**: Locust (`load-tests/locustfile.py`)
+**Tool**: Locust via Docker (`load-tests/Dockerfile`)
 
 ```bash
-cd load-tests
-pip install -r requirements.txt
-locust -f locustfile.py --host=http://<server-ip>
+# Build (one time)
+docker build -t sre-final-locust -f load-tests/Dockerfile load-tests/
+
+# Web UI
+docker run --rm --network host sre-final-locust -f locustfile.py --host=http://localhost:80
+
+# Headless (100 users, 10/s spawn, 5 minutes)
+docker run --rm --network host sre-final-locust \
+  -f locustfile.py --host=http://localhost:80 \
+  --headless -u 100 -r 10 -t 5m
 ```
 
 Tasks (weighted distribution):
