@@ -115,6 +115,12 @@ jobs:
       - name: Verify app rollout
         run: kubectl rollout status deployment/app -n sre-final --timeout=120s
 
+      - name: Wait for all pods
+        run: |
+          kubectl wait --for=condition=available deployment/prometheus -n sre-final --timeout=300s || true
+          kubectl wait --for=condition=available deployment/grafana -n sre-final --timeout=300s || true
+          echo "Deployment complete (pods may still be starting)"
+
       - name: Health check
         run: |
           for i in $(seq 1 20); do

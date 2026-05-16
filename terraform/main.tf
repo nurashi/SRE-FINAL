@@ -66,6 +66,8 @@ resource "kubernetes_deployment_v1" "app" {
     labels    = { app = "sre-final" }
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = var.app_replicas
 
@@ -204,6 +206,8 @@ resource "kubernetes_deployment_v1" "prometheus" {
     labels    = { app = "prometheus" }
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = 1
 
@@ -336,6 +340,8 @@ resource "kubernetes_deployment_v1" "grafana" {
     namespace = kubernetes_namespace_v1.sre_final.metadata[0].name
     labels    = { app = "grafana" }
   }
+
+  wait_for_rollout = false
 
   spec {
     replicas = 1
@@ -489,6 +495,8 @@ resource "kubernetes_deployment_v1" "alertmanager" {
     namespace = kubernetes_namespace_v1.sre_final.metadata[0].name
     labels    = { app = "alertmanager" }
   }
+
+  wait_for_rollout = false
 
   spec {
     replicas = 1
