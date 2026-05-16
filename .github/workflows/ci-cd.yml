@@ -94,10 +94,8 @@ jobs:
 
       - name: Deploy with Docker Compose
         env:
-          IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/sre-final
-          TAG: ${{ github.sha }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
-          echo "Pulling latest image: ${IMAGE_NAME}:sha-${TAG::7}"
           docker compose -f docker-compose.yml pull
           docker compose -f docker-compose.yml up -d --remove-orphans
           docker compose -f docker-compose.yml ps
@@ -132,10 +130,12 @@ jobs:
 
       - name: Validate Prometheus config
         run: |
-          docker run --rm -v $(pwd)/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
-            prom/prometheus:v3.2.1 promtool check config /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint /bin/promtool \
+            -v $(pwd)/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+            prom/prometheus:v3.2.1 check config /etc/prometheus/prometheus.yml
 
       - name: Validate alert rules
         run: |
-          docker run --rm -v $(pwd)/slo/rules.yml:/etc/prometheus/rules.yml \
-            prom/prometheus:v3.2.1 promtool check rules /etc/prometheus/rules.yml
+          docker run --rm --entrypoint /bin/promtool \
+            -v $(pwd)/slo/rules.yml:/etc/prometheus/rules.yml \
+            prom/prometheus:v3.2.1 check rules /etc/prometheus/rules.yml
