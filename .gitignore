@@ -3,8 +3,6 @@
 *.tfstate.*
 *.tfvars
 !terraform/terraform.tfvars
-.generated/
-generated_nginx.conf
 app/server
 *.exe
 __debug_bin*
@@ -15,4 +13,3 @@ __debug_bin*
 prometheus_data/
 grafana_data/
 alertmanager_data/
-postgres_data/

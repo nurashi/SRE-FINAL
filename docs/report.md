@@ -12,36 +12,32 @@
                           Internet
                               │
                     ┌─────────▼─────────┐
-                    │  NGINX (80)        │  Load Balancer
-                    │  upstream: app     │
+                    │  Traefik Ingress   │  K3s Ingress Controller
+                    │  (HTTP)            │
                     └─────────┬─────────┘
                               │
-              ┌───────────────┼───────────────┐
-              │               │               │
-     ┌────────▼────────┐ ┌───▼────┐  ┌───────▼──────────┐
-     │ App Replica 0   │ │ App 1  │  │ App Replica N    │
-     │ :8080           │ │ :8081  │  │ :8080+N          │
-     └────────┬────────┘ └───┬────┘  └───────┬──────────┘
-              │               │               │
-              └───────────────┼───────────────┘
-                              │ /metrics
-                    ┌─────────▼─────────┐
-                    │   Prometheus       │  Metrics DB + Alerting
-                    │   :9090            │
-                    └─────────┬─────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              │               │               │
-     ┌────────▼────────┐ ┌───▼──────────┐     │
-     │  Grafana :3000   │ │ Alertmanager │     │
-     │  Dashboards       │ │ :9093        │     │
-     └──────────────────┘ └──────────────┘     │
-                                               │
-                    ┌──────────────────────────▼──┐
-                    │  Autoscale Service           │
-                    │  Queries Prometheus          │
-                    │  Terraform apply replicas=N   │
-                    └─────────────────────────────┘
+        ┌─────────┬───────────┼───────────┬─────────┐
+        │         │           │           │         │
+   sre-*.abzy.kz grafana-*  metrics-*  alerts-*   (Host-based routing)
+        │         │           │           │
+  ┌─────▼──┐ ┌───▼────┐ ┌───▼──────┐ ┌─▼──────────┐
+  │ App    │ │Grafana │ │Prometheus│ │Alertmanager│
+  │Deploymt│ │Deploymt│ │Deploymt  │ │Deploymt    │
+  │ Replic │ │ Repl:1 │ │ Repl:1   │ │ Repl:1     │
+  │ 2→5    │ └───┬────┘ └───┬──────┘ └─┬──────────┘
+  │ (HPA)  │     │          │          │
+  └───┬────┘     │          │          │
+      │          │          │          │
+      │          │    ┌─────▼──────┐   │
+      │          │    │ Prometheus │   │
+      │          │    │ ConfigMap  │   │
+      │          │    │ (rules.yml)│   │
+      │          │    └────────────┘   │
+      │          │          │          │
+  ┌───▼──────────▼──────────▼──────────▼───┐
+  │          PVC (local-path)              │
+  │   10Gi (prom) / 2Gi (graf) / 1Gi (am) │
+  └────────────────────────────────────────┘
 ```
 
 ### Stack
@@ -50,47 +46,46 @@
 |-------|-----------|
 | Application | Go (Gin), in-memory storage |
 | Containerization | Docker, multi-stage build |
-| Load Balancer | NGINX with dynamic upstream |
-| Infrastructure as Code | Terraform (Docker provider) |
+| Orchestration | K3s (Kubernetes) |
+| Ingress | Traefik |
+| Infrastructure as Code | Terraform (kubernetes provider) |
 | CI/CD | GitHub Actions (self-hosted runner) |
 | Metrics | Prometheus |
 | Dashboards | Grafana |
 | Alerting | Alertmanager |
-| Auto-scaling | Custom Bash + Systemd timer |
-| Load Testing | Locust |
+| Auto-scaling | K8s HPA (CPU + Memory) |
+| Load Testing | Locust (Docker) |
 
 ---
 
 ## 2. Infrastructure as Code
 
-### Terraform Resources
+### Terraform Resources (kubernetes provider)
 
 | Resource | Purpose | Scaling |
 |----------|---------|---------|
-| `docker_network` | Isolated bridge network (10.10.0.0/16) | Static |
-| `docker_volume` × 3 | Persistent storage (prometheus, grafana, alertmanager) | Static |
-| `docker_image` × 5 | Pull images from Docker Hub | Static |
-| `docker_container.app` × N | Go API instances | `app_replicas` variable |
-| `docker_container.nginx` | Reverse proxy with dynamic upstream | Regenerated on scale |
-| `docker_container.prometheus` | Metrics collection | Static |
-| `docker_container.grafana` | Visualization dashboards | Static |
-| `docker_container.alertmanager` | Alert routing | Static |
-| `local_file` | Generated nginx.conf from template | Per replica count |
+| `kubernetes_namespace` | Isolated namespace `sre-final` | Static |
+| `kubernetes_deployment` × 4 | App, Prometheus, Grafana, Alertmanager | HPA on App |
+| `kubernetes_service` × 4 | ClusterIP services | Static |
+| `kubernetes_horizontal_pod_autoscaler_v2` | CPU > 70% or Memory > 80% → scale up | 1-5 replicas |
+| `kubernetes_persistent_volume_claim` × 3 | Prometheus (10Gi), Grafana (2Gi), Alertmanager (1Gi) | local-path |
+| `kubernetes_config_map` × 5 | Monitoring configs & dashboards | Static |
+| `kubernetes_ingress_v1` | Traefik host-based routing for 4 domains | Static |
 
 ### Variables
 
 ```
-app_replicas          = 2      (default, scaled by autoscaler)
-max_replicas          = 5      (auto-scale ceiling)
-min_replicas          = 1      (auto-scale floor)
-scale_up_threshold    = 50     (req/s to trigger scale up)
-scale_down_threshold  = 10     (req/s to trigger scale down)
+app_replicas     = 2      (initial, HPA overrides)
+max_replicas     = 5      (HPA ceiling)
+min_replicas     = 1      (HPA floor)
+domain_suffix    = nurashi.abzy.kz
+namespace        = sre-final
 ```
 
 ### State Management
 
-- Backend: local, path `/home/nurashi/terraform-state/sre-final.tfstate`
-- State persisted between CI/CD runs and autoscaler executions
+- Backend: local, path `/home/nurashi/terraform-state/sre-final-k8s.tfstate`
+- State persisted between CI/CD runs
 - `clean: false` on checkout preserves `.terraform/` provider cache
 
 ---
@@ -107,26 +102,15 @@ git push main
     ├─► docker-build-push     docker/login → buildx → metadata → push
     │                         tags: latest, sha-<short>, main
     │
-    ├─► deploy                docker/login → terraform init → terraform apply
-    │                         → health check → install autoscale systemd units
+    ├─► deploy                terraform init → terraform apply (K8s provider)
+    │                         → kubectl rollout status → health check
     │
     └─► prometheus-validate   promtool check config + rules
 ```
 
-### Secrets (GitHub)
-
-- `DOCKERHUB_USERNAME` — Docker Hub username
-- `DOCKERHUB_TOKEN` — Docker Hub access token
-
-### Runner
-
-- Self-hosted: `nurashi@nurashi-server`
-- OS: Debian 13 (trixie), x86_64
-- Docker socket access for container management
-
 ### Successful Execution
 
-![alt text](image.png)
+*[Insert screenshot of GitHub Actions — all jobs green]*
 
 ---
 
@@ -143,7 +127,7 @@ git push main
 
 ### Grafana Dashboard
 
-**SLI Dashboard** (`http://<server>:3000/d/sre-sli-dashboard`):
+**SLI Dashboard** (`https://grafana-nurashi.abzy.kz/d/sre-sli-dashboard`):
 
 | Panel | Metric | Purpose |
 |-------|--------|---------|
@@ -154,7 +138,8 @@ git push main
 | Availability SLI | `(1 - error_rate) × 100` | SLO compliance gauge |
 | Latency SLO p99 | `histogram_quantile(0.99, ...)` | p99 vs. 1s target |
 | Heatmap | Request duration distribution | Anomaly detection |
-![alt text](image-1.png)
+
+*[Insert screenshot of Grafana SLI Dashboard]*
 
 ### Alertmanager Rules
 
@@ -165,7 +150,8 @@ git push main
 | ServiceDown | critical | App unreachable | 1m |
 | HighRequestRate | warning | Request rate > 100/s | 2m |
 
-![alt text](image-2.png)
+*[Insert screenshot of Alertmanager firing alert]*
+
 ---
 
 ## 5. SRE Operations
@@ -178,36 +164,24 @@ git push main
 | Latency (p99) | `histogram_quantile(0.99, ...)` | **< 1.0s** | 28d | 1.0s |
 | Throughput | `rate(http_requests_total[1m])` | **100 req/s** | 28d | — |
 
-### Auto-Scaling
+### Auto-Scaling (K8s HPA)
 
-**Strategy**: Reactive scaling based on request rate from Prometheus.
+Kubernetes Horizontal Pod Autoscaler manages replicas automatically:
 
-```
-Every 30s:
-  1. Query Prometheus: sum(rate(http_requests_total[1m]))
-  2. Query Prometheus: count(up{job="sre-final-app"})
-  3. If rate > 50 req/s AND replicas < 5 → scale UP  (+1)
-  4. If rate < 10 req/s AND replicas > 1 → scale DOWN (-1)
-  5. Cooldown: 60s between scale operations
-  6. Execute: terraform apply -var="app_replicas=$NEW"
+```yaml
+minReplicas: 1
+maxReplicas: 5
+metrics:
+  - cpu:    70% utilization
+  - memory: 80% utilization
 ```
 
-**Implementation**: `scripts/autoscale.sh` + Systemd timer (every 30s).
-
-Components:
-- `scripts/autoscale.sh` — scaling logic
-- `scripts/autoscale.service` — systemd unit (oneshot)
-- `scripts/autoscale.timer` — systemd timer (OnUnitActiveSec=30)
-
-To enable auto-scaling on the server I have used:
+Check scaling status:
 ```bash
-sudo cp scripts/autoscale.service /etc/systemd/system/
-sudo cp scripts/autoscale.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now autoscale.timer
+kubectl get hpa -n sre-final --watch
 ```
 
-*[Insert screenshot showing scaling — replicas increasing during load test]*
+*[Insert screenshot showing HPA scaling during load test]*
 
 ### Load Testing
 
@@ -226,73 +200,54 @@ docker run --rm --network host sre-final-locust \
   --headless -u 100 -r 10 -t 5m
 ```
 
-Tasks (weighted distribution):
-1. `GET /api/v1/tasks` — weight 6
-2. `POST /api/v1/tasks` — weight 3
-3. `GET /api/v1/tasks/:id` — weight 2
-4. `GET /health` — weight 1
-5. `PUT /api/v1/tasks/:id` — weight 1
-6. `DELETE /api/v1/tasks/:id` — weight 1
-
 *[Insert screenshot of Locust with users/spawn rate]*
 *[Insert screenshot of Grafana showing traffic spike + scaling]*
 
 ---
 
-## 6. API Endpoints
+## 6. Access URLs
 
-| Method | Path | Status Codes |
-|--------|------|-------------|
-| GET | `/health` | 200 / 503 |
-| GET | `/ready` | 200 / 503 |
-| GET | `/metrics` | 200 |
-| GET | `/api/v1/tasks` | 200 |
-| POST | `/api/v1/tasks` | 201 / 400 |
-| GET | `/api/v1/tasks/:id` | 200 / 404 |
-| PUT | `/api/v1/tasks/:id` | 200 / 400 / 404 |
-| DELETE | `/api/v1/tasks/:id` | 200 / 404 |
-
----
+| Service | URL |
+|---------|-----|
+| API | https://sre-nurashi.abzy.kz |
+| Grafana | https://grafana-nurashi.abzy.kz |
+| SLI Dashboard | https://grafana-nurashi.abzy.kz/d/sre-sli-dashboard |
+| Prometheus | https://metrics-nurashi.abzy.kz |
+| Alertmanager | https://alerts-nurashi.abzy.kz |
 
 ## 7. Project Structure
 
 ```
 SRE-FINAL/
 ├── app/                          # Go application
-│   ├── domain/models.go          # Domain types
-│   ├── repository/memory.go      # In-memory store
-│   ├── service/task.go           # Business logic
-│   ├── api/router.go             # Gin HTTP routes
-│   ├── metrics.go                # Prometheus instrumentation
-│   ├── main.go                   # Entry point
-│   ├── go.mod / go.sum           # Dependencies
-│   └── Dockerfile                # Multi-stage build
-├── terraform/                    # Infrastructure as Code
-│   ├── main.tf                   # All Docker resources
-│   ├── variables.tf              # Configurable inputs
-│   ├── outputs.tf                # Service URLs
-│   ├── nginx.conf.tftpl          # Dynamic NGINX template
-│   └── terraform.tfvars          # Default values
+│   ├── domain/models.go
+│   ├── repository/memory.go
+│   ├── service/task.go
+│   ├── api/router.go
+│   ├── metrics.go
+│   ├── main.go
+│   └── Dockerfile
+├── terraform/                    # IaC (K8s provider)
+│   ├── main.tf                   # Namespace, Deployments, Services, HPA, Ingress, PVC, ConfigMaps
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── terraform.tfvars
 ├── monitoring/
-│   ├── prometheus/prometheus.yml # Scrape config
-│   ├── grafana/dashboards/       # SLI dashboard JSON
-│   ├── grafana/provisioning/     # Datasource + dashboard providers
-│   └── alertmanager/             # Alert routing config
-├── scripts/
-│   ├── autoscale.sh              # Auto-scaling logic
-│   ├── autoscale.service         # Systemd unit
-│   └── autoscale.timer           # Systemd timer (30s)
+│   ├── prometheus/prometheus.yml
+│   ├── grafana/dashboards/
+│   ├── grafana/provisioning/
+│   └── alertmanager/
 ├── slo/
-│   ├── rules.yml                 # Prometheus alert rules
-│   └── slos.yaml                 # SLO definitions
+│   ├── rules.yml
+│   └── slos.yaml
 ├── load-tests/
-│   ├── locustfile.py             # Locust test scenarios
-│   └── requirements.txt          # locust>=2.31
-├── .github/workflows/ci-cd.yml   # CI/CD pipeline
-├── docker-compose.yml            # Local dev / fallback deploy
-├── nginx.conf                    # Static NGINX config (compose)
-├── docs/report.md                # This report
-└── README.md                     # Project documentation
+│   ├── Dockerfile
+│   ├── locustfile.py
+│   └── requirements.txt
+├── .github/workflows/ci-cd.yml
+├── docker-compose.yml            # Fallback (local dev)
+├── docs/report.md
+└── README.md
 ```
 
 ---
@@ -306,7 +261,7 @@ SRE-FINAL/
 | 3 | Alertmanager firing alert | Alert being triggered |
 | 4 | Locust load test running | Users spawned, requests flowing |
 | 5 | Grafana during load test | Traffic spike visible |
-| 6 | Autoscale in action | Replica count increasing during load |
+| 6 | `kubectl get hpa -n sre-final` | HPA showing increased replicas |
 
 *[Attach all screenshots above]*
 
@@ -314,12 +269,12 @@ SRE-FINAL/
 
 ## 9. Conclusion
 
-The SRE-FINAL project demonstrates a complete production-ready infrastructure:
+The SRE-FINAL project demonstrates a complete production-ready infrastructure on Kubernetes:
 
-- **Reproducible**: `terraform apply` provisions the entire stack from scratch
+- **Reproducible**: `terraform apply` provisions entire K8s namespace from scratch
 - **Automated**: GitHub Actions CI/CD builds, tests, and deploys on every push
 - **Observable**: Prometheus metrics → Grafana dashboards → Alertmanager notifications
-- **Scalable**: Auto-scaling adjusts replicas based on real-time traffic from Prometheus
-- **Testable**: Locust load testing validates SLOs under stress
+- **Scalable**: K8s HPA auto-scales pods based on CPU and memory utilization
+- **Testable**: Locust load testing validates SLOs and triggers auto-scaling
 
 All four assignment steps are fully implemented and verified.

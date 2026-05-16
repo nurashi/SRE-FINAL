@@ -1,3 +1,9 @@
+variable "namespace" {
+  description = "Kubernetes namespace for the application"
+  type        = string
+  default     = "sre-final"
+}
+
 variable "dockerhub_username" {
   description = "Docker Hub username for pulling images"
   type        = string
@@ -11,63 +17,27 @@ variable "app_image_tag" {
 }
 
 variable "app_replicas" {
-  description = "Number of application replicas (horizontal scaling)"
+  description = "Number of application replicas"
   type        = number
   default     = 2
 }
 
 variable "max_replicas" {
-  description = "Maximum number of replicas for auto-scaling"
+  description = "Maximum replicas for HPA"
   type        = number
   default     = 5
 }
 
 variable "min_replicas" {
-  description = "Minimum number of replicas for auto-scaling"
+  description = "Minimum replicas for HPA"
   type        = number
   default     = 1
 }
 
-variable "scale_up_threshold" {
-  description = "Requests per second threshold to trigger scale up"
-  type        = number
-  default     = 50
-}
-
-variable "scale_down_threshold" {
-  description = "Requests per second threshold to trigger scale down"
-  type        = number
-  default     = 10
-}
-
-variable "app_port_base" {
-  description = "Base port number for application instances"
-  type        = number
-  default     = 8080
-}
-
-variable "nginx_port" {
-  description = "Port for the NGINX load balancer"
-  type        = number
-  default     = 80
-}
-
-variable "server_ip" {
-  description = "Public/reachable IP of the server for external URLs"
+variable "domain_suffix" {
+  description = "Domain suffix for ingress rules (e.g., nurashi.abzy.kz)"
   type        = string
-  default     = "192.168.1.65"
-}
-
-variable "prometheus_port" {
-  description = "Prometheus UI port"
-  type        = number
-  default     = 9090
-}
-
-variable "grafana_port" {
-  description = "Grafana UI port"
-  type        = number
-  default     = 3000
+  default     = "nurashi.abzy.kz"
 }
 
 variable "grafana_admin_user" {
@@ -84,14 +54,8 @@ variable "grafana_admin_password" {
   sensitive   = true
 }
 
-variable "alertmanager_port" {
-  description = "Alertmanager UI port"
-  type        = number
-  default     = 9093
-}
-
 variable "environment" {
-  description = "Deployment environment (dev, staging, prod)"
+  description = "Deployment environment"
   type        = string
   default     = "prod"
 

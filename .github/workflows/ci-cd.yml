@@ -76,7 +76,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
-    name: Deploy with Terraform
+    name: Deploy with Terraform (K3s)
     runs-on: self-hosted
     needs: docker-build-push
     if: github.ref == 'refs/heads/main'
@@ -88,18 +88,8 @@ jobs:
         with:
           clean: false
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Create state directory
         run: mkdir -p /home/nurashi/terraform-state
-
-      - name: Stop compose containers
-        continue-on-error: true
-        run: docker compose -f docker-compose.yml down --remove-orphans 2>/dev/null || true
 
       - name: Terraform init
         working-directory: ./terraform
@@ -116,36 +106,22 @@ jobs:
             -var="dockerhub_username=${{ secrets.DOCKERHUB_USERNAME }}" \
             -var="app_image_tag=latest"
 
-      - name: Health check
+      - name: Verify app rollout
         run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+          kubectl rollout status deployment/app -n sre-final --timeout=120s
+
+      - name: Health check via ingress
+        run: |
+          for i in $(seq 1 20); do
+            if curl -sf -o /dev/null http://localhost/health -H "Host: sre-nurashi.abzy.kz"; then
               echo "Service healthy after ${i} attempts"
               exit 0
             fi
-            echo "Waiting for service... attempt ${i}/30"
-            sleep 2
+            echo "Waiting for service... attempt ${i}/20"
+            sleep 3
           done
           echo "Service failed to become healthy"
           exit 1
-
-      - name: Setup autoscale script
-        run: |
-          mkdir -p /home/nurashi/autoscale
-          cp scripts/autoscale.sh /home/nurashi/autoscale/autoscale.sh
-          chmod +x /home/nurashi/autoscale/autoscale.sh
-          echo "Autoscale script installed to /home/nurashi/autoscale/"
-
-      - name: Install autoscale systemd units
-        continue-on-error: true
-        run: |
-          sudo cp scripts/autoscale.service /etc/systemd/system/autoscale.service
-          sudo cp scripts/autoscale.timer /etc/systemd/system/autoscale.timer
-          sudo systemctl daemon-reload
-          sudo systemctl enable autoscale.timer
-          sudo systemctl start autoscale.timer
-          echo "Autoscale timer installed and started"
-        shell: bash
 
   prometheus-validate:
     name: Validate Prometheus Config
@@ -155,12 +131,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Validate Prometheus config
         run: |
