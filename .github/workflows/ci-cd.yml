@@ -132,6 +132,7 @@ jobs:
         run: |
           docker run --rm --entrypoint /bin/promtool \
             -v $(pwd)/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+            -v $(pwd)/slo/rules.yml:/etc/prometheus/rules.yml \
             prom/prometheus:v3.2.1 check config /etc/prometheus/prometheus.yml
 
       - name: Validate alert rules
