@@ -13,7 +13,7 @@ terraform {
   }
 
   backend "local" {
-    path = "terraform.tfstate"
+    path = "/home/nurashi/terraform-state/sre-final.tfstate"
   }
 }
 
