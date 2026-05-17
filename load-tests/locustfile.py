@@ -8,7 +8,10 @@ class SREFinalUser(HttpUser):
     host = "http://localhost:8080"
 
     def on_start(self):
-        self.headers = {"Content-Type": "application/json"}
+        self.client.headers = {
+            "Content-Type": "application/json",
+            "Host": "sre-nurashi.abzy.kz",
+        }
 
     @task(6)
     def get_tasks(self):
