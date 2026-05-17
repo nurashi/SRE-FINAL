@@ -97,7 +97,7 @@ resource "kubernetes_deployment_v1" "app" {
 
           resources {
             requests = {
-              cpu    = "100m"
+              cpu    = "20m"
               memory = "128Mi"
             }
             limits = {
@@ -167,7 +167,7 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "app" {
         name = "cpu"
         target {
           type                = "Utilization"
-          average_utilization = 70
+          average_utilization = 20
         }
       }
     }

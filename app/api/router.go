@@ -34,6 +34,7 @@ func (r *Router) Setup() *gin.Engine {
 		api.GET("/tasks/:id", r.getTask)
 		api.PUT("/tasks/:id", r.updateTask)
 		api.DELETE("/tasks/:id", r.deleteTask)
+		api.GET("/compute", r.compute)
 	}
 
 	return router
@@ -155,4 +156,13 @@ func (r *Router) deleteTask(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "task deleted"})
+}
+
+func (r *Router) compute(c *gin.Context) {
+	n, _ := strconv.Atoi(c.DefaultQuery("n", "500000"))
+	result := 0
+	for i := 0; i < n; i++ {
+		result = (result + i) % 9973
+	}
+	c.JSON(http.StatusOK, gin.H{"result": result, "iterations": n})
 }

@@ -25,6 +25,11 @@ class SREFinalUser(HttpUser):
                 resp.failure(f"Expected 201, got {resp.status_code}: {resp.text}")
 
     @task(2)
+    def compute(self):
+        n = random.randint(100000, 500000)
+        self.client.get(f"/api/v1/compute?n={n}", timeout=30, name="/api/v1/compute")
+
+    @task(2)
     def get_task_by_id(self):
         task_id = random.randint(1, 50)
         self.client.get(f"/api/v1/tasks/{task_id}", timeout=10)
