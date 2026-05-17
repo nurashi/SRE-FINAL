@@ -1,6 +1,6 @@
 # SRE Capstone Project — Production Readiness Review
 
-**Team:** SRE-FINAL  
+**Team:** SRE-FINAL: Nurassyl Orazbek, Anuar Zhenissov, Asylan Usen
 **Repository:** https://github.com/nurashi/SRE-FINAL  
 **Date:** May 2026
 
