@@ -383,11 +383,11 @@ resource "kubernetes_deployment_v1" "grafana" {
           }
           env {
             name  = "GF_SERVER_ROOT_URL"
-            value = "https://grafana-${var.domain_suffix}"
+            value = "https://${var.domain_grafana}"
           }
           env {
             name  = "GF_SERVER_DOMAIN"
-            value = "grafana-${var.domain_suffix}"
+            value = var.domain_grafana
           }
           env {
             name  = "GF_SERVER_ENFORCE_DOMAIN"
@@ -606,7 +606,7 @@ resource "kubernetes_ingress_v1" "main" {
     ingress_class_name = "traefik"
 
     rule {
-      host = "sre-${var.domain_suffix}"
+      host = var.domain_app
       http {
         path {
           path      = "/"
@@ -624,7 +624,7 @@ resource "kubernetes_ingress_v1" "main" {
     }
 
     rule {
-      host = "grafana-${var.domain_suffix}"
+      host = var.domain_grafana
       http {
         path {
           path      = "/"
@@ -642,7 +642,7 @@ resource "kubernetes_ingress_v1" "main" {
     }
 
     rule {
-      host = "metrics-${var.domain_suffix}"
+      host = var.domain_prometheus
       http {
         path {
           path      = "/"
@@ -660,7 +660,7 @@ resource "kubernetes_ingress_v1" "main" {
     }
 
     rule {
-      host = "alerts-${var.domain_suffix}"
+      host = var.domain_alertmanager
       http {
         path {
           path      = "/"

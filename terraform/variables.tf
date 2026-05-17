@@ -34,10 +34,28 @@ variable "min_replicas" {
   default     = 1
 }
 
-variable "domain_suffix" {
-  description = "Domain suffix for ingress rules (e.g., nurashi.abzy.kz)"
+variable "domain_app" {
+  description = "Domain for the application API"
   type        = string
-  default     = "nurashi.abzy.kz"
+  default     = "sre-nurashi.abzy.kz"
+}
+
+variable "domain_grafana" {
+  description = "Domain for Grafana"
+  type        = string
+  default     = "grafana-sre-nurashi.abzy.kz"
+}
+
+variable "domain_prometheus" {
+  description = "Domain for Prometheus"
+  type        = string
+  default     = "metrics-sre-nurashi.abzy.kz"
+}
+
+variable "domain_alertmanager" {
+  description = "Domain for Alertmanager"
+  type        = string
+  default     = "alerts-sre-nurashi.abzy.kz"
 }
 
 variable "grafana_admin_user" {

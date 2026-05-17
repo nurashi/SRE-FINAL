@@ -127,7 +127,7 @@ git push main
 
 ### Grafana Dashboard
 
-**SLI Dashboard** (`https://grafana-nurashi.abzy.kz/d/sre-sli-dashboard`):
+**SLI Dashboard** (`https://grafana-sre-nurashi.abzy.kz/d/sre-sli-dashboard`):
 
 | Panel | Metric | Purpose |
 |-------|--------|---------|
@@ -210,10 +210,10 @@ docker run --rm --network host sre-final-locust \
 | Service | URL |
 |---------|-----|
 | API | https://sre-nurashi.abzy.kz |
-| Grafana | https://grafana-nurashi.abzy.kz |
-| SLI Dashboard | https://grafana-nurashi.abzy.kz/d/sre-sli-dashboard |
-| Prometheus | https://metrics-nurashi.abzy.kz |
-| Alertmanager | https://alerts-nurashi.abzy.kz |
+| Grafana | https://grafana-sre-nurashi.abzy.kz |
+| SLI Dashboard | https://grafana-sre-nurashi.abzy.kz/d/sre-sli-dashboard |
+| Prometheus | https://metrics-sre-nurashi.abzy.kz |
+| Alertmanager | https://alerts-sre-nurashi.abzy.kz |
 
 ## 7. Project Structure
 

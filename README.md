@@ -45,10 +45,10 @@ Site Reliability Engineering project with Infrastructure as Code, CI/CD, Observa
 | Service | URL |
 |---------|-----|
 | API | https://sre-nurashi.abzy.kz |
-| Grafana | https://grafana-nurashi.abzy.kz |
-| SLI Dashboard | https://grafana-nurashi.abzy.kz/d/sre-sli-dashboard |
-| Prometheus | https://metrics-nurashi.abzy.kz |
-| Alertmanager | https://alerts-nurashi.abzy.kz |
+| Grafana | https://grafana-sre-nurashi.abzy.kz |
+| SLI Dashboard | https://grafana-sre-nurashi.abzy.kz/d/sre-sli-dashboard |
+| Prometheus | https://metrics-sre-nurashi.abzy.kz |
+| Alertmanager | https://alerts-sre-nurashi.abzy.kz |
 
 Grafana login: `admin` / `admin`
 
@@ -141,7 +141,7 @@ docker run --rm --network host sre-final-locust -f locustfile.py --host=http://l
 kubectl get hpa -n sre-final --watch
 
 # Browser: Grafana SLI dashboard
-# https://grafana-nurashi.abzy.kz/d/sre-sli-dashboard
+# https://grafana-sre-nurashi.abzy.kz/d/sre-sli-dashboard
 ```
 
 ## Load Testing

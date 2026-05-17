@@ -1,26 +1,26 @@
 output "app_url" {
   description = "Application URL"
-  value       = "https://sre-${var.domain_suffix}"
+  value       = "https://${var.domain_app}"
 }
 
 output "grafana_url" {
   description = "Grafana URL"
-  value       = "https://grafana-${var.domain_suffix}"
+  value       = "https://${var.domain_grafana}"
 }
 
 output "prometheus_url" {
   description = "Prometheus URL"
-  value       = "https://metrics-${var.domain_suffix}"
+  value       = "https://${var.domain_prometheus}"
 }
 
 output "alertmanager_url" {
   description = "Alertmanager URL"
-  value       = "https://alerts-${var.domain_suffix}"
+  value       = "https://${var.domain_alertmanager}"
 }
 
 output "sli_dashboard" {
   description = "Direct link to SLI dashboard"
-  value       = "https://grafana-${var.domain_suffix}/d/sre-sli-dashboard"
+  value       = "https://${var.domain_grafana}/d/sre-sli-dashboard"
 }
 
 output "namespace" {
