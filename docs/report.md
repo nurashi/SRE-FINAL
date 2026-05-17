@@ -109,9 +109,7 @@ git push main
 ```
 
 ### Successful Execution
-
-*[Insert screenshot of GitHub Actions — all jobs green]*
-
+![alt text](image.png)
 ---
 
 ## 4. Observability & Alerting
@@ -139,7 +137,7 @@ git push main
 | Latency SLO p99 | `histogram_quantile(0.99, ...)` | p99 vs. 1s target |
 | Heatmap | Request duration distribution | Anomaly detection |
 
-*[Insert screenshot of Grafana SLI Dashboard]*
+![alt text](image-1.png)
 
 ### Alertmanager Rules
 
@@ -150,8 +148,7 @@ git push main
 | ServiceDown | critical | App unreachable | 1m |
 | HighRequestRate | warning | Request rate > 100/s | 2m |
 
-*[Insert screenshot of Alertmanager firing alert]*
-
+![alt text](image-2.png)
 ---
 
 ## 5. SRE Operations
@@ -181,7 +178,9 @@ Check scaling status:
 kubectl get hpa -n sre-final --watch
 ```
 
-*[Insert screenshot showing HPA scaling during load test]*
+![alt text](image-3.png)
+![alt text](image-5.png)
+
 
 ### Load Testing
 
@@ -199,9 +198,6 @@ docker run --rm --network host sre-final-locust \
   -f locustfile.py --host=http://localhost:80 \
   --headless -u 100 -r 10 -t 5m
 ```
-
-*[Insert screenshot of Locust with users/spawn rate]*
-*[Insert screenshot of Grafana showing traffic spike + scaling]*
 
 ---
 
@@ -249,21 +245,6 @@ SRE-FINAL/
 ├── docs/report.md
 └── README.md
 ```
-
----
-
-## 8. Screenshots Checklist
-
-| # | Screenshot | Description |
-|---|-----------|-------------|
-| 1 | GitHub Actions — all jobs green | CI/CD pipeline successful execution |
-| 2 | Grafana SLI Dashboard | All 7 panels showing live metrics |
-| 3 | Alertmanager firing alert | Alert being triggered |
-| 4 | Locust load test running | Users spawned, requests flowing |
-| 5 | Grafana during load test | Traffic spike visible |
-| 6 | `kubectl get hpa -n sre-final` | HPA showing increased replicas |
-
-*[Attach all screenshots above]*
 
 ---
 
