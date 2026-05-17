@@ -1,4 +1,4 @@
-FROM locustio/locust:2.40
+FROM locustio/locust:latest
 
 COPY locustfile.py /mnt/locust/locustfile.py
 
